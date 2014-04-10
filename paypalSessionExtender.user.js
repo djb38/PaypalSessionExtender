@@ -18,33 +18,35 @@ var PaypalSessionExtender = {
 		interval: 300000, // 5 minute interval between poking Paypal to stay logged in
 		iFrameSrc: 'https://paypalmanager.paypal.com/login.do'
 	},
-	cache: {
-		getLastKeepalive: function() {
-			return +GM_getValue('paypal_keepalive', 0);
-		},
-		setLastKeepalive: function() {
-			return GM_setValue('paypal_keepalive', $.now());
-		},
-		iFrame: null,
+
+	iFrame: null,
+
+	getLastKeepalive: function() {
+		return +GM_getValue('paypal_keepalive', 0);
 	},
+
+	setLastKeepalive: function() {
+		return GM_setValue('paypal_keepalive', $.now());
+	},
+
 	initialise: function() {
-		setInterval(PaypalSessionExtender.check, PaypalSessionExtender.settings.heartbeat);
+		setInterval(function() {
+			if ($.now() - PaypalSessionExtender.getLastKeepalive() > PaypalSessionExtender.settings.interval) {
+				PaypalSessionExtender.keepAlive();
+			}
+		}, this.settings.heartbeat);
 	},
-	check: function() {
-		if ($.now() - PaypalSessionExtender.cache.getLastKeepalive() > PaypalSessionExtender.settings.interval) {
-			PaypalSessionExtender.keepAlive();
-		}
-	},
+
 	keepAlive: function() {
-		PaypalSessionExtender.cache.setLastKeepalive();
+		this.setLastKeepalive();
 
-		if (PaypalSessionExtender.cache.iFrame) {
-			PaypalSessionExtender.cache.iFrame.remove();
-			PaypalSessionExtender.cache.iFrame = null;
+		if (this.iFrame) {
+			this.iFrame.remove();
+			this.iFrame = null;
 		}
 
-		PaypalSessionExtender.cache.iFrame = $('<iframe src="' + PaypalSessionExtender.settings.iFrameSrc + '?t=' + $.now() + '" style="display: none;"></iframe>');
-		$('body').append(PaypalSessionExtender.cache.iFrame);
+		this.iFrame = $('<iframe src="' + this.settings.iFrameSrc + '?t=' + $.now() + '" style="display: none;"></iframe>');
+		$('body').append(this.iFrame);
 	}
 };
 
